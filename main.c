@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /*
 GraphRanker
@@ -13,16 +14,14 @@ E una sequenza di comandi tra
     TopK
 
 d, k e il numero di grafi sono rappresentabili con interi a 32 bit.
-*/
-
-// AggiungiGrafo(FILE *fin)
- /*crea un array di interi con d-1 celle dove memorizza il valore del cammino minimo a quel nodo, la funzione
- ritorna la somma dei cammini minimi */
-// TopK()
- //Stampa i valori minimi dalla lista
 
 
-/*
+AggiungiGrafo(FILE *fin)
+    Crea un array di interi con d-1 celle dove memorizza il valore del cammino minimo a quel nodo, la funzione
+    ritorna la somma dei cammini minimi 
+TopK()
+    Stampa i valori minimi dalla lista
+
  L'idea è di usare l'algoritmo di Dijkstra con una struttura a Heap di Fibonacci per ottenere le prestazioni 
  temporali e spaziali migliori
 */
@@ -45,6 +44,51 @@ struct NodoGrafo{
 typedef struct NodoGrafo Pezzo;
 typedef Pezzo *ListaPrioritaria;
 
+Lista inserisci_ordine_ricorsivo1 (Lista l, int valore);
+
+ListaPrioritaria inserisci_ordine_ricorsivo2 (ListaPrioritaria l, int costo, int inizio, int fine);
+
+int AggiungiGrafo(FILE *fin, int d);
+
+void TopK (Lista l, int k);
+
+int SceltaSuccessivo(ListaPrioritaria Queue, int d, int TabellaVisite[3][d]);
+
+int main() {
+    int d, k, punteggio;
+    char lettura[15];
+    FILE *fin;
+    Lista valori_finali;
+    fin = fopen ("input.txt", "r");
+    if (fin == NULL) {
+        printf("La lettura non é andata a buon fine"); 
+        exit(1);
+    }
+    fscanf(fin, "%d ,", &d);
+    fscanf(fin, "%d", &k);
+    fscanf(fin, "%*[^\n]");
+    printf("%c\n",fgetc(fin));
+    while(fgetc(fin)!=EOF){
+        fgets(lettura,15,fin);
+        if (strcmp(lettura,"AggiungiGrafo")==0)
+        while (fgetc(fin)==65){ //Che cazzo ho scritto? -> Segmentation Fault 11 qui
+            printf("Sono qui\n");
+            punteggio = AggiungiGrafo(fin, d);
+            inserisci_ordine_ricorsivo1(valori_finali, punteggio);
+        }
+        if (strcmp(lettura,"TopK")==0) TopK(valori_finali, k);
+    }
+    fclose(fin);
+    return 0;
+}
+
+void TopK (Lista l, int k){
+    for (int i = 0; i<k; i++){
+        printf("%d ", l->valore);
+        l = l->next;
+    }
+}
+
 Lista inserisci_ordine_ricorsivo1 (Lista l, int valore){
     Lista p;
     if (l == NULL){
@@ -60,7 +104,7 @@ Lista inserisci_ordine_ricorsivo1 (Lista l, int valore){
         return p;
     }
 
-    l->next = inserisci_ordine_ricorsivo(l->next,valore);
+    l->next = inserisci_ordine_ricorsivo1(l->next,valore);
     return l;
 }
 
@@ -87,49 +131,33 @@ ListaPrioritaria inserisci_ordine_ricorsivo2 (ListaPrioritaria l, int costo, int
     return l;
 }
 
-int AggiungiGrafo(FILE *fin, int d);
-
-void TopK (Lista l, int k);
-
-//void SceltaSuccessivo(ListaPrioritaria Queue, int** TabellaVisite, int d, int* selezione)
-
-int main() {
-    int d, k, punteggio;
-    FILE *fin ;
-    Lista valori_finali;
-    fin = fopen ("input.txt", "r");
-    if (fin == NULL) {
-        printf("La lettura non é andata a buon fine"); 
-        exit(1);
-    }
-    fscanf(fin, "%d", &d);
-    fscanf(fin, "%d", &k);
-    while (fgetc(fin)==65){ //bisogna gestire la riga qui o nella funzione, meglio qui
-        punteggio = AggiungiGrafo(fin, d);
-        inserisci_ordine_ricorsivo1(valori_finali, punteggio);
-    }
-    TopK(valori_finali, k);
-    fclose(fin);
-    return 0;
+int SceltaSuccessivo(ListaPrioritaria Queue,int d, int TabellaVisite[3][d]){
+    TabellaVisite[0][Queue->fine] = Queue->fine;
+    TabellaVisite[1][Queue->fine] = Queue->inizio;
+    TabellaVisite[2][Queue->fine] = Queue->costo + TabellaVisite[2][Queue->inizio];
+    int selezione = Queue->fine;
+    ListaPrioritaria Trash = Queue;
+    Queue = Queue->next;
+    free(Trash);
+    return selezione;
 }
 
-void TopK (Lista l, int k){
-    for (int i = 0; i<k; i++){
-        printf("%d ", l->valore);
-        l = l->next;
-    }
-}
 
 int AggiungiGrafo(FILE *fin, int d) {
+    fscanf(fin, "%*[^\n]");
     int matrice [d][d];
     for (int i = 0; i<d; i++){
-        for (int j = 0; j<d; j++){
-            fscanf(fin,"%d", matrice[i][j]); //attenzione alle virgole
+        fscanf(fin,"%d", &matrice[i][0]);
+        for (int j = 1; j<d; j++){
+            fscanf(fin,", %d", &matrice[i][j]); //attenzione alle virgole
         }
     }
     int TabellaVisite[3][d-1];
+    TabellaVisite[0][0] = 0;
+    TabellaVisite[1][0] = 0;
+    TabellaVisite[2][0] = 0;
     ListaPrioritaria Queue;
-    int selezione = 0, peso = 0;
+    int selezione = 0;
     for (int i = 0; i < d; i++)
     {
         for (int j = 0; j<d; j++){
@@ -137,7 +165,7 @@ int AggiungiGrafo(FILE *fin, int d) {
                 inserisci_ordine_ricorsivo2(Queue,matrice[selezione][j],selezione,j);
             }
         }
-        //SceltaSuccessivo();
+        selezione = SceltaSuccessivo(Queue,d,TabellaVisite);
     }
     int somma = 0;
     for(int i = 0; i<d; i++){
