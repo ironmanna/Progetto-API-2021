@@ -55,28 +55,28 @@ void TopK (Lista l, int k);
 int SceltaSuccessivo(ListaPrioritaria Queue, int d, int TabellaVisite[3][d]);
 
 int main() {
-    int d, k, punteggio;
-    char lettura[15];
+    int d, k, punteggio, count=0;
+    char lettura[16];
     FILE *fin;
-    Lista valori_finali;
+    Lista valori_finali = NULL;
     fin = fopen ("input.txt", "r");
     if (fin == NULL) {
         printf("La lettura non é andata a buon fine"); 
         exit(1);
     }
-    fscanf(fin, "%d ,", &d);
-    fscanf(fin, "%d", &k);
-    fscanf(fin, "%*[^\n]");
-    printf("%c\n",fgetc(fin));
-    while(fgetc(fin)!=EOF){
-        fgets(lettura,15,fin);
-        if (strcmp(lettura,"AggiungiGrafo")==0)
-        while (fgetc(fin)==65){ //Che cazzo ho scritto? -> Segmentation Fault 11 qui
-            printf("Sono qui\n");
+    if (fscanf(fin, "%d ,", &d) == 0) printf("Errore nella prima lettura\n");
+    if (fscanf(fin, "%d\n", &k) == 0) printf("Errore nella seconda lettura\n");
+    while(!feof(fin)){
+        printf("%d\n",count);
+        if (fgets(lettura,16,fin) == NULL) printf("Errore nella fgets %s\n",lettura);
+        if (strcmp(lettura,"AggiungiGrafo\n")==0){ //Che cazzo ho scritto? -> Segmentation Fault 11 qui
+            printf("Sono qui 2\n"); 
             punteggio = AggiungiGrafo(fin, d);
+            printf("Sono qui 3\n");
             inserisci_ordine_ricorsivo1(valori_finali, punteggio);
         }
-        if (strcmp(lettura,"TopK")==0) TopK(valori_finali, k);
+        if (strcmp(lettura,"TopK")==0) TopK(valori_finali, k );
+        count++;
     }
     fclose(fin);
     return 0;
@@ -102,8 +102,7 @@ Lista inserisci_ordine_ricorsivo1 (Lista l, int valore){
         p->valore = valore;
         p->next = NULL;
         return p;
-    }
-
+    }    
     l->next = inserisci_ordine_ricorsivo1(l->next,valore);
     return l;
 }
@@ -132,7 +131,7 @@ ListaPrioritaria inserisci_ordine_ricorsivo2 (ListaPrioritaria l, int costo, int
 }
 
 int SceltaSuccessivo(ListaPrioritaria Queue,int d, int TabellaVisite[3][d]){
-    TabellaVisite[0][Queue->fine] = Queue->fine;
+    TabellaVisite[0][Queue->fine] = Queue->fine;    //Queue is not inizialised
     TabellaVisite[1][Queue->fine] = Queue->inizio;
     TabellaVisite[2][Queue->fine] = Queue->costo + TabellaVisite[2][Queue->inizio];
     int selezione = Queue->fine;
@@ -144,19 +143,18 @@ int SceltaSuccessivo(ListaPrioritaria Queue,int d, int TabellaVisite[3][d]){
 
 
 int AggiungiGrafo(FILE *fin, int d) {
-    fscanf(fin, "%*[^\n]");
     int matrice [d][d];
     for (int i = 0; i<d; i++){
-        fscanf(fin,"%d", &matrice[i][0]);
+        if(fscanf(fin,"%d", &matrice[i][0])==0) printf("Errore nella lettura della prima cella\n");
         for (int j = 1; j<d; j++){
-            fscanf(fin,", %d", &matrice[i][j]); //attenzione alle virgole
+            if(fscanf(fin,", %d", &matrice[i][j])==0) printf("Errore nella lettura delle celle\n");; //attenzione alle virgole
         }
     }
     int TabellaVisite[3][d-1];
     TabellaVisite[0][0] = 0;
     TabellaVisite[1][0] = 0;
     TabellaVisite[2][0] = 0;
-    ListaPrioritaria Queue;
+    ListaPrioritaria Queue = NULL;
     int selezione = 0;
     for (int i = 0; i < d; i++)
     {
