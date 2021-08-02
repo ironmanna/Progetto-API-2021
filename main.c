@@ -72,7 +72,7 @@ int main() {
         if (strcmp(lettura,"AggiungiGrafo\n")==0){ //Che cazzo ho scritto? -> Segmentation Fault 11 qui
             printf("Sono qui 2\n"); 
             punteggio = AggiungiGrafo(fin, d);
-            printf("Sono qui 3\n");
+            printf("Sono qui 3 %d\n",punteggio);
             inserisci_ordine_ricorsivo1(valori_finali, punteggio);
         }
         if (strcmp(lettura,"TopK")==0) TopK(valori_finali, k );

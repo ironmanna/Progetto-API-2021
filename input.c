@@ -4,31 +4,46 @@
 
 #define BUFFER 10000
 
-void AggiungiGrafo(FILE *fin, int d){
-    //int matrice [d][d];
-    int cont=0,caratteriLetti;
-    char riga[BUFFER];
+void Dijkstra(int d, int matrice[d][d]){
+    printf("Chiamata a Dijkstra\n");
     for (int i = 0; i < d; i++)
-    {
-        if(fgets(riga, BUFFER, fin) == NULL) printf("Problema 1\n");
-        caratteriLetti = strlen(riga);
-        if(riga[caratteriLetti-1] == '\n') riga[caratteriLetti-1]='\0';
-        printf("%s\n",riga);
-        for(int j=0;j<d;j++){
-            //matrice[i][j] = riga[cont];
-            cont++;
-            if(riga[cont]==',') cont++;
-            if(riga[cont]=='\0') cont++;
-        }
-    }
-    /*for (int i = 0; i < d; i++)
     {
         for (int j = 0; j < d; j++)
         {
             printf("%d ",matrice[i][j]);
         }
         printf("\n");
-    }*/
+    }
+}
+
+void AggiungiGrafo(FILE *fin, int d){
+    int matrice [d][d];
+    for (int i = 0; i < d; i++)
+    {
+        for (int j = 0; j < d; j++)
+        {
+            matrice[i][j] = 0;
+        }
+    }
+    int colonna=0;
+    printf("Chiamata a AggiungiGrafo\n");
+    int caratteriLetti;
+    char riga[BUFFER];
+    for (int i = 0; i < d; i++)
+    {
+        if(fgets(riga, BUFFER, fin) == NULL) printf("Problema 1\n");
+        caratteriLetti = strlen(riga);
+        if(riga[caratteriLetti-1] == '\n') riga[caratteriLetti-1]='\0';
+        for(int j=0;j<caratteriLetti;j++){
+           if (riga[j] != 44 && riga[j] != 0){
+               if(matrice[i][colonna]==0) matrice[i][colonna]=riga[j]-48;
+               else matrice[i][colonna] = matrice[i][colonna]*10 + riga[j]-48;
+           }
+           if (riga[j]==44) colonna++;
+        }
+        colonna = 0;
+    }
+    Dijkstra(d,matrice);    
 }
 
 void TopK(){
