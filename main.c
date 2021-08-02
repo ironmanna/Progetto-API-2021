@@ -46,7 +46,7 @@ typedef Pezzo *ListaPrioritaria;
 
 Lista inserisci_ordine_ricorsivo1 (Lista l, int valore);
 
-ListaPrioritaria inserisci_ordine_ricorsivo2 (ListaPrioritaria l, int costo, int inizio, int fine);
+ListaPrioritaria inserisci_ordine_ricorsivo2 (ListaPrioritaria l, int costo, int inizio, int peso, int fine);
 
 int AggiungiGrafo(FILE *fin, int d);
 
@@ -100,40 +100,43 @@ Lista inserisci_ordine_ricorsivo1 (Lista l, int valore){
     if (valore < l->valore) {
         p = malloc (sizeof(struct Nodo));
         p->valore = valore;
-        p->next = NULL;
+        p->next = l;
         return p;
     }    
     l->next = inserisci_ordine_ricorsivo1(l->next,valore);
     return l;
 }
 
-ListaPrioritaria inserisci_ordine_ricorsivo2 (ListaPrioritaria l, int costo, int inizio, int fine){
+ListaPrioritaria inserisci_ordine_ricorsivo2 (ListaPrioritaria l, int costo, int inizio, int peso, int fine){
     ListaPrioritaria p;
     if (l == NULL){
         p = malloc (sizeof(struct NodoGrafo));
-        p->costo = costo;
+        p->costo = costo + peso;
         p->inizio = inizio;
         p->fine = fine;
         p->next = NULL;
         return p;
     }
-    if (costo < l->costo) {
+    if ((costo + peso) < l->costo) {
         p = malloc (sizeof(struct NodoGrafo));
-        p->costo = costo;
+        p->costo = costo + peso;
         p->inizio = inizio;
         p->fine = fine;
-        p->next = NULL;
+        p->next = l;
         return p;
     }
 
-    l->next = inserisci_ordine_ricorsivo2(l->next,costo,inizio,fine);
+    l->next = inserisci_ordine_ricorsivo2(l->next,costo,inizio,peso,fine);
     return l;
 }
 
 int SceltaSuccessivo(ListaPrioritaria Queue,int d, int TabellaVisite[3][d]){
-    TabellaVisite[0][Queue->fine] = Queue->fine;    //Queue is not inizialised
+    if(Queue == NULL){
+        return 0;
+    }
+    TabellaVisite[0][Queue->fine] = Queue->fine;
     TabellaVisite[1][Queue->fine] = Queue->inizio;
-    TabellaVisite[2][Queue->fine] = Queue->costo + TabellaVisite[2][Queue->inizio];
+    TabellaVisite[2][Queue->fine] = Queue->costo;
     int selezione = Queue->fine;
     ListaPrioritaria Trash = Queue;
     Queue = Queue->next;
@@ -156,14 +159,16 @@ int AggiungiGrafo(FILE *fin, int d) {
     TabellaVisite[2][0] = 0;
     ListaPrioritaria Queue = NULL;
     int selezione = 0;
+    int peso = 0;
     for (int i = 0; i < d; i++)
     {
         for (int j = 0; j<d; j++){
             if (matrice[selezione][j] != 0 && selezione != j){
-                inserisci_ordine_ricorsivo2(Queue,matrice[selezione][j],selezione,j);
+                Queue = inserisci_ordine_ricorsivo2(Queue,matrice[selezione][j],selezione,peso,j);
             }
         }
         selezione = SceltaSuccessivo(Queue,d,TabellaVisite);
+        if (i>0 && selezione == 0) break;
     }
     int somma = 0;
     for(int i = 0; i<d; i++){
