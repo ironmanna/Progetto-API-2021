@@ -4,20 +4,20 @@
 
 #define BUFFER 10000
 
-void Dijkstra(int d, int matrice[d][d]){
+void Dijkstra(int d, long int matrice[d][d]){
     printf("Chiamata a Dijkstra\n");
     for (int i = 0; i < d; i++)
     {
         for (int j = 0; j < d; j++)
         {
-            printf("%d ",matrice[i][j]);
+            printf("%ld ",matrice[i][j]);
         }
         printf("\n");
     }
 }
 
 void AggiungiGrafo(FILE *fin, int d){
-    int matrice [d][d];
+    long int matrice [d][d];
     for (int i = 0; i < d; i++)
     {
         for (int j = 0; j < d; j++)
@@ -37,9 +37,15 @@ void AggiungiGrafo(FILE *fin, int d){
         for(int j=0;j<caratteriLetti;j++){
            if (riga[j] != 44 && riga[j] != 0){
                if(matrice[i][colonna]==0) matrice[i][colonna]=riga[j]-48;
-               else matrice[i][colonna] = matrice[i][colonna]*10 + riga[j]-48;
+               else{
+                   matrice[i][colonna] = matrice[i][colonna]*10 + riga[j]-48;
+               }
+               printf("%ld ", matrice[i][colonna]);
            }
-           if (riga[j]==44) colonna++;
+           if (riga[j]==44 || riga[j]==0) {
+               colonna++;
+               printf("\n");
+           }
         }
         colonna = 0;
     }

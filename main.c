@@ -28,7 +28,8 @@ TopK()
 #define BUFFER 10000
 
 struct Nodo{
-    int valore;
+    int numeroOrdine;
+    long int valore;
     struct Nodo *next;
 };
 
@@ -38,14 +39,14 @@ typedef Elem *Lista;
 struct NodoGrafo{
     int inizio;
     int fine;
-    int costo;
+    long int costo;
     struct NodoGrafo *next;
 };
 
 typedef struct NodoGrafo Pezzo;
 typedef Pezzo *ListaPrioritaria;
 
-ListaPrioritaria inserimento(ListaPrioritaria Queue, int riga, int j, int valore, int peso){
+ListaPrioritaria inserimento(ListaPrioritaria Queue, int riga, int j, long int valore, long int peso){
     ListaPrioritaria p;
     if(Queue==NULL){
         Queue = malloc(sizeof(struct NodoGrafo));
@@ -70,14 +71,14 @@ ListaPrioritaria inserimento(ListaPrioritaria Queue, int riga, int j, int valore
 void stampaLista(ListaPrioritaria Queue){
     ListaPrioritaria Trash;
     while (Queue!=NULL){
-        printf("Inizio: %d, Fine: %d, Costo: %d\n",Queue->inizio, Queue->fine, Queue->costo);
+        //printf("Inizio: %d, Fine: %d, Costo: %ld\n",Queue->inizio, Queue->fine, Queue->costo);
         Trash = Queue;
         Queue = Queue->next;
         free(Trash);
     }
 }
 
-ListaPrioritaria successivo(ListaPrioritaria Queue,int d, int Tabella[d][d], int *riga){
+ListaPrioritaria successivo(ListaPrioritaria Queue,int d, long int Tabella[d][d], int *riga){
     ListaPrioritaria Trash = NULL;
     while(Queue!=NULL){
         Trash = Queue;
@@ -87,24 +88,23 @@ ListaPrioritaria successivo(ListaPrioritaria Queue,int d, int Tabella[d][d], int
             Tabella[Queue->fine][2] = Queue->costo;
             *riga = Queue->fine;
             Queue = Queue->next;
-            printf("Liberata da 1 -> Inizio: %d, Fine: %d, Costo: %d\n",Trash->inizio, Trash->fine, Trash->costo);
+            //printf("Liberata da 1 -> Inizio: %d, Fine: %d, Costo: %ld\n",Trash->inizio, Trash->fine, Trash->costo);
             free(Trash);
             return Queue;
         }
         Queue = Queue->next;
-        printf("Liberata da 2 -> Inizio: %d, Fine: %d, Costo: %d\n",Trash->inizio, Trash->fine, Trash->costo);
+        //printf("Liberata da 2 -> Inizio: %d, Fine: %d, Costo: %ld\n",Trash->inizio, Trash->fine, Trash->costo);
         free(Trash);
     }
     return Queue;
 }
 
-int Dijkstra(int d, int matrice[d][d]){
-    int riga = 0,valore = 0, peso = 0, punteggio = 0;
+long int Dijkstra(int d, long int matrice[d][d], long int TabellaVisite[3][d]){
+    int riga = 0;
+    long int peso = 0;
+    long int punteggio = 0;
+    long int valore = 0;
     ListaPrioritaria Queue = NULL;
-    int TabellaVisite[d][3];
-    TabellaVisite[0][0] = 0;
-    TabellaVisite[0][1] = 0;
-    TabellaVisite[0][2] = 0;
     for (int i = 1; i < d; i++)
     {
         TabellaVisite[i][0] = (d+1);
@@ -113,30 +113,46 @@ int Dijkstra(int d, int matrice[d][d]){
         for(int j=0; j<d; j++){
             if(riga!=j && matrice[riga][j]!=0){
                 valore = matrice[riga][j];
-                printf("%d ",valore);
+                //printf("%ld ",valore);
                 Queue = inserimento (Queue, riga, j, valore, peso);
             }
         }
-        printf("\n");
+        //printf("\n");
         if(Queue!=NULL) Queue = successivo(Queue,d,TabellaVisite,&riga);
         else break;
         peso = TabellaVisite[riga][2];
     }
-    printf("\n");
+    //printf("\n");
     for (int i = 0; i < d; i++)
     {
         punteggio += TabellaVisite [i][2];
     }
+    for (int i = 0; i < d; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            //printf("%ld ",TabellaVisite[i][j]);
+        }
+        //printf("\n");
+    }
     return punteggio;
 }
 
-int AggiungiGrafo(FILE *fin, int d){
-    int matrice [d][d];
+long int AggiungiGrafo(FILE *fin, int d){
+    long int matrice [d][d];
     for (int i = 0; i < d; i++)
     {
         for (int j = 0; j < d; j++)
         {
             matrice[i][j] = 0;
+        }
+    }
+    long int TabellaVisite[d][3];
+    for (int i = 0; i < d; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            TabellaVisite[i][j] = 0;
         }
     }
     int colonna=0;
@@ -156,43 +172,44 @@ int AggiungiGrafo(FILE *fin, int d){
         }
         colonna = 0;
     }
-    return Dijkstra(d,matrice);    
+    return Dijkstra(d,matrice,TabellaVisite);    
 }
 
-Lista accodamento (Lista best, int punteggio){
+Lista accodamento (Lista best, long int punteggio, int numeroOrdine){
     Lista p;
+    if (punteggio==0) return best;
     if(best==NULL){
         best = malloc(sizeof(struct Nodo));
+        best->numeroOrdine = numeroOrdine;
         best->valore = punteggio;
         best->next = NULL;
         return best;
     }
     if (punteggio < best->valore) {
         p = malloc (sizeof(struct Nodo));
+        p->numeroOrdine = numeroOrdine;
         p->valore = punteggio;
         p->next = best;
         return p;
     }    
-    best->next = accodamento(best->next,punteggio);
+    best->next = accodamento(best->next,punteggio,numeroOrdine);
     return best;
 }
 
 void TopK(Lista best, int k){
-    Lista Trash = NULL;
-    while(best!=NULL || k!=0){
-        printf("%d ",best->valore);
-        k--;
-        Trash = best;
+    while (best!=NULL && k!=0){
+        printf("%d ",best->numeroOrdine);
         best = best->next;
-        free(Trash);
+        k--;
     }
+    printf("\n");
 }
 
 int main() {
     FILE *fin;
     Lista classifica = NULL;
-    fin = fopen("input.txt","r");
-    int d,k, caratteriLetti;
+    fin = fopen("input_1","r");
+    int d,k, caratteriLetti, numeroOrdine = 0;
     char lettura[BUFFER];
     if (fscanf(fin, "%d ,", &d) == 0) printf("Errore nella prima lettura\n");
     if (fscanf(fin, "%d\n", &k) == 0) printf("Errore nella seconda lettura\n");
@@ -200,7 +217,11 @@ int main() {
     {
         caratteriLetti = strlen(lettura);
         if(lettura[caratteriLetti-1] == '\n') lettura[caratteriLetti-1]='\0';
-        if (!strcmp(lettura,"AggiungiGrafo")) classifica = accodamento(classifica, AggiungiGrafo(fin,d));
+        if (!strcmp(lettura,"AggiungiGrafo")){
+            numeroOrdine++;
+            classifica = accodamento(classifica, AggiungiGrafo(fin,d),numeroOrdine);
+            //printf("Fine AggiungiGrafo\n");
+        } 
         if (!strcmp(lettura,"TopK")) TopK(classifica, k);
 
     } 
