@@ -58,11 +58,20 @@ void TopK(){
 
 int main(){
     FILE *fin;
-    fin = fopen("input.txt","r");
-    int d,k, caratteriLetti;
+    fin = fopen("input_1","r");
+    int d = 0,k = 0, caratteriLetti = 0, scelta = 0;
     char lettura[BUFFER];
-    if (fscanf(fin, "%d ,", &d) == 0) printf("Errore nella prima lettura\n");
-    if (fscanf(fin, "%d\n", &k) == 0) printf("Errore nella seconda lettura\n");
+    if (fgets(lettura, BUFFER, fin) == NULL) printf("Errore nella prima lettura\n");
+    caratteriLetti = strlen(lettura);
+    if(lettura[caratteriLetti-1] == '\n') lettura[caratteriLetti-1]='\0';
+    for(int i=0; i<caratteriLetti; i++){
+        if (lettura[i] != 32 && lettura[i] != 0){
+            if (scelta == 0) d = d*10 + (lettura[i] - 48);
+            else k = k*10 + (lettura[i] - 48);
+        }
+        if (lettura[i] == 32) scelta = 1;
+    }
+    printf("%d %d\n",d,k);
     while(fgets(lettura, BUFFER, fin) != NULL) 
     {
         caratteriLetti = strlen(lettura);

@@ -22,162 +22,95 @@ AggiungiGrafo(FILE *fin)
 TopK()
     Stampa i valori minimi dalla lista
 
- L'idea è di usare l'algoritmo di Dijkstra con una lista per organizzare le visite successive 
+ L'idea è di usare l'algoritmo di Dijkstra con un heap per organizzare le visite successive 
 */
 
 #define BUFFER 10000
 
 struct Nodo{
     int numeroOrdine;
-    long int valore;
+     int valore;
     struct Nodo *next;
 };
 
 typedef struct Nodo Elem;
 typedef Elem *Lista;
 
-struct NodoGrafo{
-    int inizio;
-    int fine;
-    long int costo;
-    struct NodoGrafo *next;
+struct Heap{
+    int occupati;
+    int capacita;
+    int *arrayValori;
+    int *arrayCorrispondenze;
 };
+typedef struct Heap Heap;
 
-typedef struct NodoGrafo Pezzo;
-typedef Pezzo *ListaPrioritaria;
+int compare(char *str1, char *str2);
 
-ListaPrioritaria inserimento(ListaPrioritaria Queue, int riga, int j, long int valore, long int peso){
-    ListaPrioritaria p;
-    if(Queue==NULL){
-        Queue = malloc(sizeof(struct NodoGrafo));
-        Queue->inizio = riga;
-        Queue->fine = j;
-        Queue->costo = valore + peso;
-        Queue->next = NULL;
-        return Queue;
+Heap *CreaHeap(int capacita);
+void inserisci(Heap *h, int valore, int *distanza, int indice, int peso);
+void heapifyBassoAlto(Heap *h,int indice);
+void heapifyAltoBasso(Heap *h, int indicePadre);
+int PopMin(Heap *h,int *indice);
+int Dijkstra(int d, int matrice[d][d]);
+int AggiungiGrafo(FILE *fin, int d);
+Lista accodamento (Lista best,  int punteggio, int numeroOrdine);
+void TopK(Lista best, int k);
+void libera(Lista best);
+
+int main() {
+    FILE *fin;
+    Lista classifica = NULL;
+    fin = fopen("input_4","r");
+    int d = 0,k = 0, caratteriLetti = 0, numeroOrdine = 0, scelta = 0;
+    char lettura[BUFFER];
+    if (fgets(lettura, BUFFER, fin) == NULL) printf("Errore nella prima lettura\n");
+    caratteriLetti = strlen(lettura);
+    if(lettura[caratteriLetti-1] == '\n') lettura[caratteriLetti-1]='\0';
+    for(int i=0; i<caratteriLetti; i++){
+        if (lettura[i] != 32 && lettura[i] != 0){
+            if (scelta == 0) d = d*10 + (lettura[i] - 48);
+            else k = k*10 + (lettura[i] - 48);
+        }
+        if (lettura[i] == 32) scelta = 1;
     }
-    if (valore + peso < Queue->costo) {
-        p = malloc (sizeof(struct NodoGrafo));
-        p->inizio = riga;
-        p->fine = j;
-        p->costo = valore + peso;
-        p->next = Queue;
-        return p;
-    }    
-    Queue->next = inserimento(Queue->next,riga, j, valore, peso);
-    return Queue;
+    while(fgets(lettura, BUFFER, fin) != NULL) 
+    {
+        caratteriLetti = strlen(lettura);
+        if(lettura[caratteriLetti-1] == '\n') lettura[caratteriLetti-1]='\0';
+        if (!compare(lettura,"AggiungiGrafo")){
+            classifica = accodamento(classifica, AggiungiGrafo(fin,d),numeroOrdine);
+            numeroOrdine++;
+            //printf("Fine AggiungiGrafo\n");
+        } 
+        if (!compare(lettura,"TopK")) TopK(classifica, k);
+    }
+    libera(classifica);
+    fclose (fin);
+    return 0;
 }
 
-void stampaLista(ListaPrioritaria Queue){
-    ListaPrioritaria Trash;
-    while (Queue!=NULL){
-        //printf("Inizio: %d, Fine: %d, Costo: %ld\n",Queue->inizio, Queue->fine, Queue->costo);
-        Trash = Queue;
-        Queue = Queue->next;
-        free(Trash);
+void libera(Lista best){
+    Lista trash;
+    while(best!=NULL){
+        trash = best;
+        best = best->next;
+        free(trash);
     }
 }
 
-ListaPrioritaria successivo(ListaPrioritaria Queue,int d, long int Tabella[d][d], int *riga){
-    ListaPrioritaria Trash = NULL;
-    while(Queue!=NULL){
-        Trash = Queue;
-        if(Tabella[Queue->fine][0]==(d+1)){
-            Tabella[Queue->fine][0] = Queue->fine;
-            Tabella[Queue->fine][1] = Queue->inizio;
-            Tabella[Queue->fine][2] = Queue->costo;
-            *riga = Queue->fine;
-            Queue = Queue->next;
-            //printf("Liberata da 1 -> Inizio: %d, Fine: %d, Costo: %ld\n",Trash->inizio, Trash->fine, Trash->costo);
-            free(Trash);
-            return Queue;
-        }
-        Queue = Queue->next;
-        //printf("Liberata da 2 -> Inizio: %d, Fine: %d, Costo: %ld\n",Trash->inizio, Trash->fine, Trash->costo);
-        free(Trash);
+int compare(char *str1, char *str2){
+    int indice = 0;
+    while (str1[indice]==str2[indice] && (str1[indice]!='\0' && str2[indice]!='\0'))
+    {
+        indice++;
+        //printf("Sono in compare\n");
     }
-    return Queue;
+    if(str1[indice] == str2[indice]) return 0;
+    else return str1[indice]-str2[indice];
 }
 
-long int Dijkstra(int d, long int matrice[d][d], long int TabellaVisite[3][d]){
-    int riga = 0;
-    long int peso = 0;
-    long int punteggio = 0;
-    long int valore = 0;
-    ListaPrioritaria Queue = NULL;
-    for (int i = 1; i < d; i++)
-    {
-        TabellaVisite[i][0] = (d+1);
-    }
-    for(int i=0; i<d; i++){
-        for(int j=0; j<d; j++){
-            if(riga!=j && matrice[riga][j]!=0){
-                valore = matrice[riga][j];
-                //printf("%ld ",valore);
-                Queue = inserimento (Queue, riga, j, valore, peso);
-            }
-        }
-        //printf("\n");
-        if(Queue!=NULL) Queue = successivo(Queue,d,TabellaVisite,&riga);
-        else break;
-        peso = TabellaVisite[riga][2];
-    }
-    //printf("\n");
-    for (int i = 0; i < d; i++)
-    {
-        punteggio += TabellaVisite [i][2];
-    }
-    for (int i = 0; i < d; i++)
-    {
-        for (int j = 0; j < 3; j++)
-        {
-            //printf("%ld ",TabellaVisite[i][j]);
-        }
-        //printf("\n");
-    }
-    return punteggio;
-}
-
-long int AggiungiGrafo(FILE *fin, int d){
-    long int matrice [d][d];
-    for (int i = 0; i < d; i++)
-    {
-        for (int j = 0; j < d; j++)
-        {
-            matrice[i][j] = 0;
-        }
-    }
-    long int TabellaVisite[d][3];
-    for (int i = 0; i < d; i++)
-    {
-        for (int j = 0; j < 3; j++)
-        {
-            TabellaVisite[i][j] = 0;
-        }
-    }
-    int colonna=0;
-    int caratteriLetti;
-    char riga[BUFFER];
-    for (int i = 0; i < d; i++)
-    {
-        if(fgets(riga, BUFFER, fin) == NULL) printf("Problema 1\n");
-        caratteriLetti = strlen(riga);
-        if(riga[caratteriLetti-1] == '\n') riga[caratteriLetti-1]='\0';
-        for(int j=0;j<caratteriLetti;j++){
-           if (riga[j] != 44 && riga[j] != 0){
-               if(matrice[i][colonna]==0) matrice[i][colonna]=riga[j]-48;
-               else matrice[i][colonna] = matrice[i][colonna]*10 + riga[j]-48;
-           }
-           if (riga[j]==44) colonna++;
-        }
-        colonna = 0;
-    }
-    return Dijkstra(d,matrice,TabellaVisite);    
-}
-
-Lista accodamento (Lista best, long int punteggio, int numeroOrdine){
+Lista accodamento (Lista best,  int punteggio, int numeroOrdine){
     Lista p;
-    if (punteggio==0) return best;
     if(best==NULL){
         best = malloc(sizeof(struct Nodo));
         best->numeroOrdine = numeroOrdine;
@@ -201,30 +134,167 @@ void TopK(Lista best, int k){
         printf("%d ",best->numeroOrdine);
         best = best->next;
         k--;
+
     }
     printf("\n");
 }
 
-int main() {
-    FILE *fin;
-    Lista classifica = NULL;
-    fin = fopen("input_1","r");
-    int d,k, caratteriLetti, numeroOrdine = 0;
-    char lettura[BUFFER];
-    if (fscanf(fin, "%d ,", &d) == 0) printf("Errore nella prima lettura\n");
-    if (fscanf(fin, "%d\n", &k) == 0) printf("Errore nella seconda lettura\n");
-    while(fgets(lettura, BUFFER, fin) != NULL) 
-    {
-        caratteriLetti = strlen(lettura);
-        if(lettura[caratteriLetti-1] == '\n') lettura[caratteriLetti-1]='\0';
-        if (!strcmp(lettura,"AggiungiGrafo")){
-            numeroOrdine++;
-            classifica = accodamento(classifica, AggiungiGrafo(fin,d),numeroOrdine);
-            //printf("Fine AggiungiGrafo\n");
-        } 
-        if (!strcmp(lettura,"TopK")) TopK(classifica, k);
+Heap *creaHeap(int capacita){
+    Heap *h = (Heap * ) malloc(sizeof(Heap));
 
-    } 
-    fclose (fin);
-    return 0;
+    if(h == NULL){
+        //printf("Errore nella creazione dell'Heap");
+        return NULL;
+    }
+    h->occupati=0;
+    h->capacita = capacita;
+    h->arrayValori = (int *) malloc(capacita*sizeof(int));
+    h->arrayCorrispondenze = (int *) malloc(capacita*sizeof(int));
+
+    if ( h->arrayValori == NULL || h->arrayCorrispondenze == NULL){
+        //printf("Errore nella creazione degli array");
+        return NULL;
+    }
+    return h;
+}
+
+void inserisci(Heap *h, int valore, int *distanza,int indice, int peso){
+    if( h->occupati < h->capacita){
+        h->arrayValori[h->occupati] = valore + peso;
+        h->arrayCorrispondenze[h->occupati] = indice;
+        heapifyBassoAlto(h, h->occupati);
+        h->occupati++;
+    }
+}
+
+void heapifyBassoAlto(Heap *h,int indice){
+    int temp;
+    int indicePadre = (indice-1)/2;
+
+    if(h->arrayValori[indicePadre] > h->arrayValori[indice]){
+        temp = h->arrayValori[indicePadre];
+        h->arrayValori[indicePadre] = h->arrayValori[indice];
+        h->arrayValori[indice] = temp;
+        temp = h->arrayCorrispondenze[indicePadre];
+        h->arrayCorrispondenze[indicePadre] = h->arrayCorrispondenze[indice];
+        h->arrayCorrispondenze[indice] = temp;
+        heapifyBassoAlto(h,indicePadre);
+    }
+}
+
+void heapifyAltoBasso(Heap *h, int indicePadre){
+    int sinistro = indicePadre*2+1;
+    int destro = indicePadre*2+2;
+    int min;
+    int temp;
+
+    if(sinistro >= h->occupati || sinistro <0)
+        sinistro = -1;
+    if(destro >= h->occupati || destro <0)
+        destro = -1;
+
+    if(sinistro != -1 && h->arrayValori[sinistro] < h->arrayValori[indicePadre])
+        min = sinistro;
+    else
+        min = indicePadre;
+    if(destro != -1 && h->arrayValori[destro] < h->arrayValori[min])
+        min = destro;
+
+    if(min != indicePadre){
+        temp = h->arrayValori[min];
+        h->arrayValori[min] = h->arrayValori[indicePadre];
+        h->arrayValori[indicePadre] = temp;
+        temp = h->arrayCorrispondenze[min];
+        h->arrayCorrispondenze[min] = h->arrayCorrispondenze[indicePadre];
+        h->arrayCorrispondenze[indicePadre] = temp;
+
+        heapifyAltoBasso(h, min);
+    }
+}
+
+int PopMin(Heap *h, int *indice){
+    int pop;
+    if(h->occupati==0){
+        //printf("Heap vuoto\n");
+        return -1;
+    }
+    pop = h->arrayValori[0];
+    h->arrayValori[0] = h->arrayValori[h->occupati-1];
+    *indice = h->arrayCorrispondenze[0];
+    h->arrayCorrispondenze[0] = h->arrayCorrispondenze[h->occupati-1];
+    h->occupati--;
+    heapifyAltoBasso(h, 0);
+    return pop;
+}
+
+int AggiungiGrafo(FILE *fin, int d){
+     int matrice [d][d];
+    for (int i = 0; i < d; i++)
+    {
+        for (int j = 0; j < d; j++)
+        {
+            matrice[i][j] = 0;
+        }
+    }
+    int colonna=0;
+    int caratteriLetti;
+    char riga[BUFFER];
+    for (int i = 0; i < d; i++)
+    {
+        if(fgets(riga, BUFFER, fin) == NULL) printf("Problema 1\n");
+        caratteriLetti = strlen(riga);
+        if(riga[caratteriLetti-1] == '\n') riga[caratteriLetti-1]='\0';
+        for(int j=0;j<caratteriLetti;j++){
+           if (riga[j] != 44 && riga[j] != 0){
+               if(matrice[i][colonna]==0) matrice[i][colonna]=riga[j]-48;
+               else matrice[i][colonna] = matrice[i][colonna]*10 + riga[j]-48;
+           }
+           if (riga[j]==44) colonna++;
+        }
+        colonna = 0;
+    }
+    return Dijkstra(d,matrice);    
+}
+
+int Dijkstra(int d, int matrice[d][d]){
+    int capacita = d * (d-1);
+    int *distanza = malloc(d*sizeof(int));
+    for (int i = 0; i < d; i++)
+    {
+        distanza[i]=-1;
+    }
+    distanza[0]=0;
+
+    Heap *heap = creaHeap(capacita);
+    if( heap == NULL ){
+        //printf("Errore nella funzione di creazione dell'Heap\n");
+        return -1;
+    }
+
+    int peso = 0;
+    int indice = 0;
+
+    for (int i = 0; i < d; i++)
+    {
+        for (int j = 0; j < d; j++)
+        {
+            if(indice!=j && matrice[indice][j]!=0){
+                if(distanza[j]==-1 ) inserisci(heap, matrice[indice][j],distanza, j, peso);
+            } 
+        }
+        peso = PopMin(heap,&indice);
+        //printf("Pop di valore: %d e indice: %d\n",peso,indice);
+        if(peso!=-1) if(distanza[indice] > peso || distanza[indice]==-1) distanza[indice] = peso;
+    }
+
+    int somma = 0;
+    for (int i = 0; i < d; i++)
+    {
+        if(distanza[i]!=-1) somma+=distanza[i];
+    }
+    free(heap->arrayCorrispondenze);
+    free(heap->arrayValori);
+    free(heap);
+    free(distanza);
+    return somma;
 }
