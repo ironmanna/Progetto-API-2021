@@ -1,40 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/*
-GraphRanker
-L'obiettivo del progetto di quest'anno è la gestione di una classifica tra grafi diretti pesati
-La classifica tiene traccia dei k "migliori" grafi.Il programma da realizzare riceve in ingresso due parametri, 
-una sola volta (sulla prima riga del file, separati da spazio)
-    d:ilnumerodinodideigrafi
-    k:lalunghezzadellaclassifica
-E una sequenza di comandi tra
-    AggiungiGrafo [matrice-di-adiacenza] 
-    TopK
-
-d, k e il numero di grafi sono rappresentabili con interi a 32 bit.
-
-
-AggiungiGrafo(FILE *fin)
-    Crea un array di interi con d-1 celle dove memorizza il valore del cammino minimo a quel nodo, la funzione
-    ritorna la somma dei cammini minimi 
-TopK()
-    Stampa i valori minimi dalla lista
-
- L'idea è di usare l'algoritmo di Dijkstra con un heap per organizzare le visite successive 
-*/
-
-#define BUFFER 10000
 #define INT_MAX 2147483647
-
-struct Nodo{
-    int numeroOrdine;
-    int valore;
-    struct Nodo *next;
-};
-
-typedef struct Nodo Elem;
-typedef Elem *Lista;
 
 struct Heap{
     int occupati;
@@ -52,18 +19,6 @@ struct NodoGrafo{
 };
 typedef struct NodoGrafo NodoGrafo;
 
-int compare(char *str1, char *str2);
-
-extern size_t strlen (const char *__s)
-     __THROW __attribute_pure__ __nonnull ((1));
-
-#ifdef	__USE_XOPEN2K8
-/* Find the length of STRING, but scan at most MAXLEN characters.
-   If no '\0' terminator is found in that many characters, return MAXLEN.  */
-extern size_t strnlen (const char *__string, size_t __maxlen)
-     __THROW __attribute_pure__ __nonnull ((1));
-#endif
-
 int Dijkstra(int d, int grafo[d][d]);
 Heap *CreateHeap(int capacita);
 void HeapifyDalBasso(Heap *h,int indice);
@@ -72,94 +27,23 @@ void Accoda(Heap *p,int indice, int distanza);
 NodoGrafo *CancellaMin(Heap *h);
 void PopMin(Heap *h);
 int trovaIndice (Heap *h, int nodo);
-int AggiungiGrafo(FILE *fin, int d);
-Lista accodamento (Lista best,  int punteggio, int numeroOrdine);
-void TopK(Lista best, int k);
-void libera(Lista best);
 
-int main() {
-    FILE *fin;
-    Lista classifica = NULL;
-    fin = fopen("input_3","r");
-    int d = 0, k = 0, caratteriLetti = 0, numeroOrdine = 0, scelta = 0;
-    char lettura[BUFFER];
-    if (fgets(lettura, BUFFER, fin) == NULL) printf("Errore nella prima lettura\n");
-    caratteriLetti = strlen(lettura);
-    if(lettura[caratteriLetti-1] == '\n') lettura[caratteriLetti-1]='\0';
-    for(int i=0; i<caratteriLetti; i++){
-        if (lettura[i] != 32 && lettura[i] != 0){
-            if (scelta == 0) d = d*10 + (lettura[i] - 48);
-            else k = k*10 + (lettura[i] - 48);
-        }
-        if (lettura[i] == 32) scelta = 1;
-    }
-    while(fgets(lettura, BUFFER, fin) != NULL) 
-    {
-        caratteriLetti = strlen(lettura);
-        if(lettura[caratteriLetti-1] == '\n') lettura[caratteriLetti-1]='\0';
-        if (!compare(lettura,"AggiungiGrafo")){
-            classifica = accodamento(classifica, AggiungiGrafo(fin,d),numeroOrdine);
-            numeroOrdine++;
-            //printf("Fine AggiungiGrafo\n");
-        } 
-        if (!compare(lettura,"TopK")) TopK(classifica, k);
-    }
-    libera(classifica);
-    fclose (fin);
+int main(){
+    int d = 3;
+    int Grafo[d][d];
+    Grafo[0][0] = 3;
+    Grafo[0][1] = 1;
+    Grafo[0][2] = 8;
+    Grafo[1][0] = 0;
+    Grafo[1][1] = 0;
+    Grafo[1][2] = 5;
+    Grafo[2][0] = 0;
+    Grafo[2][1] = 9;
+    Grafo[2][2] = 0;
+    
+    printf("Punteggio: %d\n",Dijkstra(d,Grafo));
     return 0;
 }
-
-void libera(Lista best){
-    Lista trash;
-    while(best!=NULL){
-        trash = best;
-        best = best->next;
-        free(trash);
-    }
-}
-
-int compare(char *str1, char *str2){
-    int indice = 0;
-    while (str1[indice]==str2[indice] && (str1[indice]!='\0' && str2[indice]!='\0'))
-    {
-        indice++;
-        //printf("Sono in compare\n");
-    }
-    if(str1[indice] == str2[indice]) return 0;
-    else return str1[indice]-str2[indice];
-}
-
-Lista accodamento (Lista best,  int punteggio, int numeroOrdine){
-    Lista p;
-    if(best==NULL){
-        best = malloc(sizeof(struct Nodo));
-        best->numeroOrdine = numeroOrdine;
-        best->valore = punteggio;
-        best->next = NULL;
-        return best;
-    }
-    if (punteggio < best->valore) {
-        p = malloc (sizeof(struct Nodo));
-        p->numeroOrdine = numeroOrdine;
-        p->valore = punteggio;
-        p->next = best;
-        return p;
-    }    
-    best->next = accodamento(best->next,punteggio,numeroOrdine);
-    return best;
-}
-
-void TopK(Lista best, int k){
-    while (best!=NULL && k!=0){
-        printf("%d ",best->numeroOrdine);
-        best = best->next;
-        k--;
-
-    }
-    printf("\n");
-}
-
- 
 
 Heap *CreateHeap(int capacita){
     Heap *h = (Heap * ) malloc(sizeof(Heap));
@@ -282,7 +166,6 @@ int trovaIndice (Heap *h,int nodo){
 int Dijkstra(int d, int grafo[d][d]){
     Heap *Q = CreateHeap(d);
     NodoGrafo *u = malloc(sizeof(NodoGrafo));
-    NodoGrafo *trash = malloc(sizeof(NodoGrafo));
     int Visite[2][d];
     Visite[0][0] = 0;
     Visite[1][0] = 0;
@@ -297,8 +180,6 @@ int Dijkstra(int d, int grafo[d][d]){
     }
     
     while(Q->occupati!=0){
-        free(trash);
-        trash = u;
         u = CancellaMin(Q);
         Visite[0][u->indice] = u->distanza;
         Visite[1][u->indice] = u->predecessore;
@@ -316,13 +197,8 @@ int Dijkstra(int d, int grafo[d][d]){
                 }
             }
         }
-
     }
 
-    free(trash);
-    free(Q->arrayNodi);
-    free(Q->arrayValori);
-    free(Q->arrayPrecedenti);
     free(Q);
     free(u);
 
@@ -330,36 +206,7 @@ int Dijkstra(int d, int grafo[d][d]){
     for (int i = 0; i < d; i++)
     {
         if(Visite[0][i] != INT_MAX) punteggio+=Visite[0][i];
-        //printf("Nodo %d, Distanza %d\n",i,Visite[0][i]);
+        printf("Nodo %d, Distanza %d\n",i,Visite[0][i]);
     }
     return punteggio;
-}
-
-int AggiungiGrafo(FILE *fin, int d){
-     int matrice [d][d];
-    for (int i = 0; i < d; i++)
-    {
-        for (int j = 0; j < d; j++)
-        {
-            matrice[i][j] = 0;
-        }
-    }
-    int colonna=0;
-    int caratteriLetti;
-    char riga[BUFFER];
-    for (int i = 0; i < d; i++)
-    {
-        if(fgets(riga, BUFFER, fin) == NULL) printf("Problema 1\n");
-        caratteriLetti = strlen(riga);
-        if(riga[caratteriLetti-1] == '\n') riga[caratteriLetti-1]='\0';
-        for(int j=0;j<caratteriLetti;j++){
-           if (riga[j] != 44 && riga[j] != 0){
-               if(matrice[i][colonna]==0) matrice[i][colonna]=riga[j]-48;
-               else matrice[i][colonna] = matrice[i][colonna]*10 + riga[j]-48;
-           }
-           if (riga[j]==44) colonna++;
-        }
-        colonna = 0;
-    }
-    return Dijkstra(d,matrice);    
 }
