@@ -76,6 +76,9 @@ int main() {
     Heap *Q = CreateHeap(d);
     unsigned int matrice [d][d];
     NodoGrafo *u = CreaNodoGrafo();
+
+    //lettura dell'input
+
     while(fgets(lettura, BUFFER, stdin) != NULL) 
     {
         caratteriLetti = strlen(lettura);
@@ -90,7 +93,7 @@ int main() {
                 if(classifica->occupati == k) CostruisciMaxHeap(classifica); //se ho raggiunto il limite di capacita ordino il MaxHeap
             }
             else{
-                if(punteggio < classifica->arrayValori[0] && punteggio != 526997){ //controllo che il valore del punteggio debba essere inserito
+                if(punteggio < classifica->arrayValori[0]){ //controllo che il valore del punteggio debba essere inserito
                     classifica->arrayValori[0] = punteggio;
                     classifica->arrayNodi[0] = numeroOrdine;
                     MaxHeapify(classifica,0); //dopo aver sostituito il nuovo valore ricostruisco l'Heap (l'ultima volta non mi serve)
@@ -100,6 +103,8 @@ int main() {
         }
         if (!compare(lettura,"TopK")) TopK(k,classifica->arrayNodi);
     }
+
+    //libero la memoria e termino
 
     free(Q->arrayNodi);
     free(Q->arrayValori);
@@ -138,7 +143,7 @@ void TopK(int k,int best[k]){ //stampa l'array contente gli indici nel formato r
     printf("\n");
 }
 
-Heap *CreateHeap(int capacita){ //crea l'Heap di dimensione data
+Heap *CreateHeap(int capacita){ //crea l'Heap di dimensione data e lo inizializza 
     Heap *h = (Heap * ) malloc(sizeof(Heap));
 
     if(h == NULL){
@@ -164,7 +169,7 @@ Heap *CreateHeap(int capacita){ //crea l'Heap di dimensione data
     return h;
 }
 
-NodoGrafo *CreaNodoGrafo(){ //crea la struct NodoGrafo
+NodoGrafo *CreaNodoGrafo(){ //crea la struct NodoGrafo e la inizializza
     NodoGrafo *h = (NodoGrafo * ) malloc(sizeof(NodoGrafo));
 
     if(h == NULL){
@@ -177,7 +182,7 @@ NodoGrafo *CreaNodoGrafo(){ //crea la struct NodoGrafo
     return h;
 }
 
-void CostruisciMinHeap(Heap *h){ //identifica i nodi non foglia e richiama MinHeapify su di essi
+void CostruisciMinHeap(Heap *h){ //identifica i nodi non foglia e invoca MinHeapify su di essi
     int heapsize = h->occupati;
 
     for (int i = (heapsize-1)/2; i >= 0; i--)
@@ -186,7 +191,7 @@ void CostruisciMinHeap(Heap *h){ //identifica i nodi non foglia e richiama MinHe
     }
 }
 
-void CostruisciMaxHeap(Heap *h){ //identifica i nodi non foglia e richiama MaxHeapify su di essi
+void CostruisciMaxHeap(Heap *h){ //identifica i nodi non foglia e invoca MaxHeapify su di essi
     int heapsize = h->occupati;
 
     for (int i = (heapsize-1)/2; i >= 0; i--)
